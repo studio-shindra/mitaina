@@ -29,6 +29,7 @@ class Post(models.Model):
     genre = models.CharField(max_length=20, choices=GENRE_CHOICES)
     work_title = models.CharField(max_length=141, blank=True, null=True)
     performer_name = models.CharField(max_length=141, blank=True, null=True)
+    character_name = models.CharField(max_length=141, blank=True, default="")
 
     # カウンタキャッシュ
     like_count = models.PositiveIntegerField(default=0)
@@ -40,12 +41,6 @@ class Post(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
-
-    def save(self, *args, **kwargs):
-        """保存時に「みたいな」を自動付与（末尾に既になければ）"""
-        if not self.text.endswith("みたいな"):
-            self.text += "みたいな"
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.author.handle_name}: {self.text[:50]}"

@@ -11,8 +11,8 @@ class UserAdmin(admin.ModelAdmin):
 
 @admin.register(Post)
 class PostAdmin(admin.ModelAdmin):
-    list_display = ("id", "author", "text", "genre", "like_count", "hatena_count", "correct_count", "created_at", "deleted_at")
-    search_fields = ("text", "author__handle_name", "work_title", "performer_name")
+    list_display = ("id", "author", "text", "genre", "character_name", "like_count", "hatena_count", "correct_count", "created_at", "deleted_at")
+    search_fields = ("text", "author__handle_name", "work_title", "performer_name", "character_name")
     list_filter = ("genre", "created_at", "deleted_at")
     readonly_fields = ("created_at",)
 

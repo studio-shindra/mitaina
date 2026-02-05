@@ -1,0 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&family=Noto+Serif+JP:wght@200..900&display=swap');
+@import "./override";
+@import "./reset";
+
+.noto {
+  font-family: "Noto Sans JP", sans-serif;
+  font-optical-sizing: auto;
+  font-style: normal;
+}
+
+.noto-mincho {
+  font-family: "Noto Serif JP", serif;
+  font-optical-sizing: auto;
+  font-style: normal;
+}
+.df-center{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+body{
+  @extend .noto;
+}
+
+p{
+  margin: 0;
+  padding: 0;
+}
+
+ul{
+  li{
+    list-style: none;
+  }
+}
+
+ol, ul, dl{
+  margin: 0;
+  padding: 0;
+}
+
+.c-name{
+  &::before{
+    content: '';
+    height: 1px;
+    width: 24px;
+    background-color: #6c757d;
+  }
+}

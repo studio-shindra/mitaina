@@ -118,8 +118,13 @@ const submitReport = async () => {
 const shareOnX = () => {
   if (!post.value) return;
 
-  const text = `${post.value.text}\n── ${post.value.work_title || ""}\n── ${post.value.performer_name || ""}\n#MITAINA`;
-  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+  let shareText = post.value.text;
+  if (post.value.work_title) shareText += `\n── ${post.value.work_title}`;
+  if (post.value.performer_name) shareText += `\n── ${post.value.performer_name}`;
+  if (post.value.character_name) shareText += `\n── ${post.value.character_name}`;
+  shareText += "\n#MITAINA";
+
+  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
   window.open(url, "_blank");
 };
 
@@ -177,6 +182,9 @@ onMounted(async () => {
               </div>
               <div v-if="post.performer_name" class="mb-2">
                 <strong>出演者:</strong> {{ post.performer_name }}
+              </div>
+              <div v-if="post.character_name" class="mb-2">
+                <strong>役名:</strong> {{ post.character_name }}
               </div>
               <small class="text-muted">
                 投稿日: {{ new Date(post.created_at).toLocaleString("ja-JP") }}

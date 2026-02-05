@@ -1,0 +1,44 @@
+/* frontend/src/assets/styles/_override.scss */
+
+/* =========================
+   MITAINA Color Definition
+   ========================= */
+$mitaina-black: #222222;
+
+/* =========================
+   Bootstrap Override
+   ========================= */
+$primary: $mitaina-black;
+$btn-primary-bg: $mitaina-black;
+$btn-primary-border: $mitaina-black;
+$link-color: $mitaina-black;
+
+/* hover 少し明るく */
+$btn-primary-hover-bg: lighten($mitaina-black, 6%);
+$btn-primary-hover-border: lighten($mitaina-black, 6%);
+
+/* =========================
+   Bootstrap Import
+   ========================= */
+@import "bootstrap/scss/bootstrap";
+
+/* =========================
+   MITAINA Base Styles
+   ========================= */
+body {
+  color: $mitaina-black;
+}
+
+a {
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+/* Card トーン */
+.mitaina-card {
+  border-radius: 12px;
+  border-color: rgba(0, 0, 0, 0.06);
+}

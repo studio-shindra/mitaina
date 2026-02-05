@@ -56,6 +56,7 @@ class PostSerializer(serializers.ModelSerializer):
             "genre",
             "work_title",
             "performer_name",
+            "character_name",
             "like_count",
             "hatena_count",
             "correct_count",
@@ -66,9 +67,10 @@ class PostSerializer(serializers.ModelSerializer):
 
     def validate_text(self, value):
         """テキストが141文字以内か検証"""
-        # 「みたいな」を付与することを考慮して、141 - 5 = 136 文字で制限
-        if len(value) > 136:
-            raise serializers.ValidationError("テキストは最大136文字です（「みたいな」を含むため）。")
+        if not value or not value.strip():
+            raise serializers.ValidationError("text is required")
+        if len(value) > 141:
+            raise serializers.ValidationError("text must be <= 141 chars")
         return value
 
     def get_reaction_counts(self, obj):
