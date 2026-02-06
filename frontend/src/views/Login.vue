@@ -3,10 +3,12 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import api from "../lib/api";
 import PasswordResetModal from "../components/PasswordResetModal.vue";
+import { IconEye, IconEyeOff } from '@tabler/icons-vue';
 
 const router = useRouter();
 const username = ref("");
 const password = ref("");
+const showPassword = ref(false);
 const loading = ref(false);
 const error = ref("");
 const showPasswordResetModal = ref(false);
@@ -63,13 +65,22 @@ const handlePasswordResetClose = () => {
 
           <div class="mb-3">
             <label for="password" class="form-label">パスワード</label>
-            <input
-              id="password"
-              v-model="password"
-              type="password"
-              class="form-control"
-              placeholder="パスワード"
-            />
+            <div class="input-group">
+              <input
+                id="password"
+                v-model="password"
+                :type="showPassword ? 'text' : 'password'"
+                class="form-control"
+                placeholder="パスワード"
+              />
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                @click="showPassword = !showPassword"
+              >
+                <component :is="showPassword ? IconEyeOff : IconEye" :size="20" />
+              </button>
+            </div>
           </div>
 
           <button type="submit" class="btn btn-primary w-100" :disabled="loading">

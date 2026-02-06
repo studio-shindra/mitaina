@@ -38,7 +38,7 @@ const updateToken = (newToken) => {
     </main>
 
     <footer class="position-fixed bottom-0 start-0 w-100 bg-white border-top">
-        <nav>
+        <nav class="container" style="max-width: 768px;">
             <ul class="d-flex align-items-center justify-content-around py-3">
                 <li>
                   <router-link to="/"><IconHomeFilled :size="24"/></router-link></li>

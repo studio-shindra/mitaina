@@ -117,16 +117,22 @@ onMounted(async () => {
             <!-- ※プロフィール編集ボタンでできるようにしたい -->
             <div class="change mb-3">
               <button
-                class="btn btn-sm btn-primary rounded-5"
+                class="btn btn-sm btn-primary rounded-5 px-3"
                 @click="handleProfileEditOpen"
               >
                 プロフィール編集
               </button>
               <button
-                class="btn btn-sm btn-secondary rounded-5 ms-2"
+                class="btn btn-sm btn-secondary rounded-5 ms-2 px-3"
                 @click="handlePasswordChangeOpen"
               >
                 パスワード変更
+              </button>
+              <button
+                @click="handleLogout"
+                class="btn btn-sm btn-outline-danger rounded-5 ms-2 px-3"
+              >
+                ログアウト
               </button>
             </div>
             <small class="text-muted">
