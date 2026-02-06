@@ -161,11 +161,6 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.2/howto/static-files/
-
-STATIC_URL = 'static/'
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
@@ -212,14 +207,8 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:8080",
 ]
 
-REST_AUTH = {
-    "PASSWORD_RESET_CONFIRM_URL": "http://localhost:5173/password-reset?uid={uid}&token={token}",
-}
-
-DJ_REST_AUTH = {
-    "PASSWORD_RESET_CONFIRM_URL": "http://localhost:5173/password-reset?uid={uid}&token={token}",
-}
-
+REST_AUTH = {"PASSWORD_RESET_CONFIRM_URL": PASSWORD_RESET_CONFIRM_URL}
+DJ_REST_AUTH = {"PASSWORD_RESET_CONFIRM_URL": PASSWORD_RESET_CONFIRM_URL}
 
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
