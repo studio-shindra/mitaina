@@ -2,12 +2,14 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 import api from "../lib/api";
+import PasswordResetModal from "../components/PasswordResetModal.vue";
 
 const router = useRouter();
 const username = ref("");
 const password = ref("");
 const loading = ref(false);
 const error = ref("");
+const showPasswordResetModal = ref(false);
 
 const handleLogin = async () => {
   if (!username.value || !password.value) {
@@ -31,14 +33,20 @@ const handleLogin = async () => {
     loading.value = false;
   }
 };
+
+const handlePasswordResetOpen = () => {
+  showPasswordResetModal.value = true;
+};
+
+const handlePasswordResetClose = () => {
+  showPasswordResetModal.value = false;
+};
 </script>
 
 <template>
   <div class="login-container">
-    <div class="card mx-auto" style="max-width: 400px">
+    <div class="card mx-auto w-100 border-0" style="max-width: 400px">
       <div class="card-body">
-        <h3 class="card-title text-center mb-4">ログイン</h3>
-
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
 
         <form @submit.prevent="handleLogin">
@@ -69,14 +77,26 @@ const handleLogin = async () => {
           </button>
         </form>
 
-        <div class="mt-3 text-center">
-          <p>
-            アカウントがありませんか？
-            <router-link to="/register">登録はこちら</router-link>
-          </p>
+        <div class="mt-5 df-center flex-column small">
+            <div>アカウントがありませんか？</div>
+            <router-link to="/register" class="btn btn-sm btn-link">登録はこちら</router-link>
+            <div class="mt-3">パスワードを忘れた場合</div>
+            <button
+              type="button"
+              class="btn btn-sm btn-link"
+              @click="handlePasswordResetOpen"
+            >
+              パスワードリセット
+            </button>
         </div>
       </div>
     </div>
+
+    <!-- パスワードリセットモーダル -->
+    <PasswordResetModal
+      :show="showPasswordResetModal"
+      @close="handlePasswordResetClose"
+    />
   </div>
 </template>
 

@@ -46,7 +46,7 @@ const handleRegister = async () => {
 
 <template>
   <div class="register-container">
-    <div class="card mx-auto" style="max-width: 400px">
+    <div class="card mx-auto border-0 w-100" style="max-width: 400px">
       <div class="card-body">
         <h3 class="card-title text-center mb-4">新規登録</h3>
 
@@ -54,7 +54,7 @@ const handleRegister = async () => {
 
         <form @submit.prevent="handleRegister">
           <div class="mb-3">
-            <label for="username" class="form-label">ユーザー名（@なし）</label>
+            <label for="username" class="form-label small">ユーザー名（@なし）</label>
             <input
               id="username"
               v-model="username"
@@ -65,29 +65,29 @@ const handleRegister = async () => {
           </div>
 
           <div class="mb-3">
-            <label for="handleName" class="form-label">表示名</label>
+            <label for="handleName" class="form-label small">表示名</label>
             <input
               id="handleName"
               v-model="handleName"
               type="text"
               class="form-control"
-              placeholder="テストユーザー"
+              placeholder="テストのほらあれ"
             />
           </div>
 
           <div class="mb-3">
-            <label for="email" class="form-label">メールアドレス</label>
+            <label for="email" class="form-label small">メールアドレス</label>
             <input
               id="email"
               v-model="email"
               type="email"
               class="form-control"
-              placeholder="test@example.com"
+              placeholder="nandakke@example.com"
             />
           </div>
 
           <div class="mb-3">
-            <label for="password1" class="form-label">パスワード</label>
+            <label for="password1" class="form-label small">パスワード</label>
             <input
               id="password1"
               v-model="password1"
@@ -98,7 +98,7 @@ const handleRegister = async () => {
           </div>
 
           <div class="mb-3">
-            <label for="password2" class="form-label">パスワード（確認）</label>
+            <label for="password2" class="form-label small">パスワード（確認）</label>
             <input
               id="password2"
               v-model="password2"
@@ -113,11 +113,9 @@ const handleRegister = async () => {
           </button>
         </form>
 
-        <div class="mt-3 text-center">
-          <p>
-            アカウントがありますか？
-            <router-link to="/login">ログインはこちら</router-link>
-          </p>
+        <div class="mt-5 df-center flex-column small">
+            <div>アカウントがありますか？</div>
+            <router-link to="/login" class="btn btn-sm btn-link">ログインはこちら</router-link>
         </div>
       </div>
     </div>

@@ -1,7 +1,10 @@
 <script setup>
 import { computed, ref } from "vue";
-import { IconHeart, IconHelpOctagon, IconCircleX, IconHeartFilled, IconHelpOctagonFilled, IconCircleXFilled } from '@tabler/icons-vue';
+import { useRouter } from "vue-router";
+import { IconHeart, IconHelpOctagon, IconCircleX, IconPaperclip, IconHeartFilled, IconHelpOctagonFilled, IconCircleXFilled } from '@tabler/icons-vue';
+import api from "../lib/api";
 
+const router = useRouter();
 const props = defineProps({
   post: { type: Object, required: true },
 });
@@ -9,6 +12,13 @@ const props = defineProps({
 const isLiked = ref(false);
 const isHatena = ref(false);
 const isCorrect = ref(false);
+const isCollect = ref(false);
+
+// ローカルカウント（props を直接編集しない）
+const likeCount = ref(props.post.like_count || 0);
+const hatenaCount = ref(props.post.hatena_count || 0);
+const correctCount = ref(props.post.correct_count || 0);
+const collectCount = ref(props.post.collect_count || 0);
 
 const formatDate = (dateStr) => {
   if (!dateStr) return "";
@@ -26,6 +36,43 @@ const genreLabel = computed(() => {
   };
   return labels[props.post.genre] || props.post.genre;
 });
+
+const getPair = (type) => {
+  switch (type) {
+    case "like": return { flag: isLiked, count: likeCount };
+    case "hatena": return { flag: isHatena, count: hatenaCount };
+    case "correct": return { flag: isCorrect, count: correctCount };
+    case "collect": return { flag: isCollect, count: collectCount };
+    default: return null;
+  }
+};
+
+const toggleReaction = async (type) => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    router.push("/login");
+    return;
+  }
+
+  const pair = getPair(type);
+  if (!pair) return;
+
+  const { flag, count } = pair;
+  const was = flag.value;
+  const old = count.value;
+
+  // optimistic
+  flag.value = !was;
+  count.value = was ? Math.max(0, old - 1) : old + 1;
+
+  try {
+    await api.post(`/posts/${props.post.id}/react/`, { reaction_type: type });
+  } catch (e) {
+    // rollback
+    flag.value = was;
+    count.value = old;
+  }
+};
 </script>
 
 <template>
@@ -46,16 +93,14 @@ const genreLabel = computed(() => {
       </div>
         <div class="d-flex justify-content-between px-3">
             <div class="d-flex d-flex align-items-center justify-content-end">
-                <div v-if="post.character_name"
-                class="text-end text-secondary small fst-italic noto-mincho c-name d-flex align-items-center gap-1">
-                    {{ post.character_name }}
+                <div class="text-end text-secondary small fst-italic noto-mincho c-name d-flex align-items-center gap-1">
+                    {{ post.character_name || 'あのキャラ' }}
                 </div>
-                <div v-else class="text-end text-secondary small fst-italic noto-mincho c-name d-flex align-items-center gap-1">あの人</div>
             </div>
             <div class="d-flex align-items-center">
-                <div v-if="post.work_title" class="text-secondary small">{{ post.work_title }}</div>
+                <div class="text-secondary small">{{ post.work_title || 'なんだっけな' }}</div>
                 <div>/</div>
-                <div v-if="post.performer_name" class="text-secondary small">{{ post.performer_name }}</div>
+                <div class="text-secondary small">{{ post.performer_name || 'あの人' }}</div>
             </div>
         </div>
 
@@ -71,22 +116,28 @@ const genreLabel = computed(() => {
 
           <div class="d-flex align-items-center justify-content-around mt-3">
             <div class="d-flex align-items-center gap-1">
-                <button class="btn btn-sm p-0 border-0 bg-transparent" @click="isLiked = !isLiked">
+                <button class="btn btn-sm p-0 border-0 bg-transparent" @click="toggleReaction('like')">
                   <component :is="isLiked ? IconHeartFilled : IconHeart" />
                 </button>
-                <span>{{ post.like_count }}</span>
+                <span>{{ likeCount }}</span>
             </div>
             <div class="d-flex align-items-center gap-1">
-                <button class="btn btn-sm p-0 border-0 bg-transparent" @click="isHatena = !isHatena">
+                <button class="btn btn-sm p-0 border-0 bg-transparent" @click="toggleReaction('hatena')">
                   <component :is="isHatena ? IconHelpOctagonFilled : IconHelpOctagon" />
                 </button>
-                <span>{{ post.hatena_count }}</span>
+                <span>{{ hatenaCount }}</span>
             </div>
             <div class="d-flex align-items-center gap-1">
-                <button class="btn btn-sm p-0 border-0 bg-transparent" @click="isCorrect = !isCorrect">
+                <button class="btn btn-sm p-0 border-0 bg-transparent" @click="toggleReaction('correct')">
                   <component :is="isCorrect ? IconCircleXFilled : IconCircleX" />
                 </button>
-                <span>{{ post.correct_count }}</span>
+                <span>{{ correctCount }}</span>
+            </div>
+            <div class="d-flex align-items-center gap-1">
+                <button class="btn btn-sm p-0 border-0 bg-transparent" @click="toggleReaction('collect')">
+                  <component :is="isCollect ? IconPaperclip : IconPaperclip" :stroke-width="isCollect ? 2.5 : 1.5" />
+                </button>
+                <span>{{ collectCount }}</span>
             </div>
             <div>
                 <span class="badge bg-light text-dark border">{{ genreLabel }}</span>

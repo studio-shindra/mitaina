@@ -2,21 +2,26 @@
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import api from "../lib/api";
+import PostCard from "../components/PostCard.vue";
 
 const route = useRoute();
 const router = useRouter();
 const user = ref(null);
 const posts = ref([]);
+const likedPosts = ref([]);
+const hatenaPosts = ref([]);
+const collectPosts = ref([]);
 const loading = ref(true);
 const error = ref("");
 const isFollowing = ref(false);
+const activeTab = ref("posts");
 
 const loadUserData = async () => {
   try {
     const username = route.params.username;
     const response = await api.get(`/users/${username}/`);
     user.value = response.data;
-    isFollowing.value = response.data.is_followed;
+    isFollowing.value = !!response.data.is_followed;
   } catch (err) {
     error.value = "ユーザーが見つかりません";
   }
@@ -25,12 +30,29 @@ const loadUserData = async () => {
 const loadUserPosts = async () => {
   try {
     const username = route.params.username;
-    // 正規 API エンドポイント：GET /api/users/{username}/posts/
     const response = await api.get(`/users/${username}/posts/`);
     posts.value = response.data.results || [];
   } catch (err) {
     error.value = "投稿の読み込みに失敗しました";
     posts.value = [];
+  }
+};
+
+const loadUserReactions = async (type) => {
+  try {
+    const username = route.params.username;
+    const response = await api.get(`/users/${username}/reactions/?type=${type}`);
+    const data = response.data.results || response.data || [];
+    
+    if (type === "like") {
+      likedPosts.value = data;
+    } else if (type === "hatena") {
+      hatenaPosts.value = data;
+    } else if (type === "collect") {
+      collectPosts.value = data;
+    }
+  } catch (err) {
+    console.error(`リアクション読み込みエラー (${type}):`, err);
   }
 };
 
@@ -44,8 +66,17 @@ const toggleFollow = async () => {
   }
 };
 
-const goToPost = (postId) => {
-  router.push(`/p/${postId}`);
+const handleTabChange = async (tab) => {
+  activeTab.value = tab;
+  
+  // タブ切替時にデータをロード（まだロードしていない場合）
+  if (tab === "like" && likedPosts.value.length === 0) {
+    await loadUserReactions("like");
+  } else if (tab === "hatena" && hatenaPosts.value.length === 0) {
+    await loadUserReactions("hatena");
+  } else if (tab === "collect" && collectPosts.value.length === 0) {
+    await loadUserReactions("collect");
+  }
 };
 
 onMounted(async () => {
@@ -57,79 +88,135 @@ onMounted(async () => {
 
 <template>
   <div class="user-profile-container">
-    <div class="card mx-auto" style="max-width: 700px">
-      <div class="card-body">
-        <div v-if="error" class="alert alert-danger">{{ error }}</div>
-
-        <div v-if="loading" class="text-center">
-          <div class="spinner-border" role="status">
-            <span class="visually-hidden">Loading...</span>
-          </div>
-        </div>
-
-        <template v-else>
+    <div class="user-profile mx-auto" style="max-width: 700px">
+      <div class="area">
           <!-- ユーザー情報 -->
-          <div v-if="user" class="mb-4">
-            <h3 class="card-title mb-2">{{ user.username }}</h3>
-            <p class="card-text text-muted">@{{ user.handle_name }}</p>
-            <small class="text-muted">
-              参加日: {{ new Date(user.created_at).toLocaleDateString("ja-JP") }}
-            </small>
-            <div class="mt-3">
+          <div v-if="user" class="mb-3">
+            <div class="wrap mb-3">
+              <div class="fs-5 fw-bold">{{ user.handle_name }}</div>
+              <div class="text-muted">@{{ user.username }}</div>
+            </div>
+            <div class="wrap mb-3">
               <button
                 @click="toggleFollow"
-                class="btn"
+                class="btn btn-sm"
                 :class="isFollowing ? 'btn-outline-primary' : 'btn-primary'"
               >
                 {{ isFollowing ? "フォロー中" : "フォローする" }}
               </button>
             </div>
-          </div>
-
-          <hr />
-
-          <!-- ユーザーの投稿 -->
-          <h5 class="mb-3">投稿（{{ posts.length }}）</h5>
-          <div v-if="posts.length === 0" class="text-center text-muted py-4">
-            投稿がありません
-          </div>
-          <div v-for="post in posts" :key="post.id" class="card mb-3">
-            <div class="card-body" @click="goToPost(post.id)" style="cursor: pointer">
-              <p class="card-text">{{ post.text }}</p>
-              <small class="text-muted">ジャンル: {{ post.genre }}</small>
-              <div v-if="post.work_title" class="mt-2">
-                <small class="text-muted">作品: {{ post.work_title }}</small>
-              </div>
-              <div class="mt-2">
-                <span class="badge bg-secondary me-2">
-                  いいね: {{ post.like_count || 0 }}
-                </span>
-                <span class="badge bg-secondary me-2">
-                  いやちゃう: {{ post.hatena_count || 0 }}
-                </span>
-                <span class="badge bg-secondary">
-                  なるほど: {{ post.correct_count || 0 }}
-                </span>
-              </div>
+            <small class="text-muted">
+              {{ new Date(user.created_at).toLocaleDateString("ja-JP") }}ぐらいから使ってるみたいです
+            </small>
+            <div class="small d-flex align-items-center gap-1 mt-2">
+              <span class="fw-semibold">{{ user.following_count || 0 }}</span>
+              <span class="text-muted">フォロー</span>
+              <span class="ms-2 fw-semibold">{{ user.followers_count || 0 }}</span>
+              <span class="text-muted">フォロワー</span>
             </div>
           </div>
 
-          <router-link to="/" class="btn btn-outline-secondary w-100 mt-3">
-            ホームに戻る
-          </router-link>
-        </template>
+          <!-- タブナビゲーション -->
+          <div class="d-flex align-items-center justify-content-between" role="tablist">
+            <button
+              class="nav-link"
+              :class="{ active: activeTab === 'posts' }"
+              @click="activeTab = 'posts'"
+              role="tab"
+            >
+              投稿
+            </button>
+            <button
+              class="nav-link"
+              :class="{ active: activeTab === 'like' }"
+              @click="handleTabChange('like')"
+              role="tab"
+            >
+              いいね
+            </button>
+            <button
+              class="nav-link"
+              :class="{ active: activeTab === 'hatena' }"
+              @click="handleTabChange('hatena')"
+              role="tab"
+            >
+              はてな
+            </button>
+            <button
+              class="nav-link"
+              :class="{ active: activeTab === 'collect' }"
+              @click="handleTabChange('collect')"
+              role="tab"
+            >
+              コレクト
+            </button>
+          </div>
+
+          <!-- 投稿タブ -->
+          <div v-if="activeTab === 'posts'">
+            <div v-if="posts.length === 0" class="text-center text-muted py-4">
+              投稿がありません
+            </div>
+            <div v-for="post in posts" :key="post.id">
+              <PostCard :post="post" />
+            </div>
+          </div>
+
+          <!-- いいねタブ -->
+          <div v-if="activeTab === 'like'">
+            <div v-if="likedPosts.length === 0" class="text-center text-muted py-4">
+              いいねがありません
+            </div>
+            <div v-for="post in likedPosts" :key="post.id">
+              <PostCard :post="post" />
+            </div>
+          </div>
+
+          <!-- はてなタブ -->
+          <div v-if="activeTab === 'hatena'">
+            <div v-if="hatenaPosts.length === 0" class="text-center text-muted py-4">
+              はてながありません
+            </div>
+            <div v-for="post in hatenaPosts" :key="post.id">
+              <PostCard :post="post" />
+            </div>
+          </div>
+
+          <!-- コレクトタブ -->
+          <div v-if="activeTab === 'collect'">
+            <div v-if="collectPosts.length === 0" class="text-center text-muted py-4">
+              コレクトがありません
+            </div>
+            <div v-for="post in collectPosts" :key="post.id">
+              <PostCard :post="post" />
+            </div>
+          </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.user-profile-container {
-  max-width: 700px;
-  margin: 0 auto;
-}
-
 .card-body {
   cursor: default;
+}
+
+.nav-link {
+  color: #6c757d;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+}
+
+.nav-link:hover {
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.nav-link.active {
+  color: #000;
+  border-bottom: 2px solid #222222;
+  font-weight: 600;
 }
 </style>

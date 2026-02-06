@@ -32,7 +32,8 @@ const updateToken = (newToken) => {
       
     </header>
     <!-- メインコンテンツ -->
-    <main class="container mt-2 mb-5 py-2">
+    <main class="container mt-2 mb-5 py-2"
+    style="max-width: 768px;">
       <router-view :key="route.fullPath" @login="(newToken) => { token = newToken; updateToken(newToken); }" />
     </main>
 

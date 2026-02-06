@@ -121,10 +121,11 @@ REST_FRAMEWORK = {
         "reaction": "300/day",
         "report": "20/day",
         "login": "30/hour",
+        "dj_rest_auth": "30/hour",
     },
 }
 
-REST_AUTH = {
+REST_AUTH_REGISTER_SERIALIZERS = {
     "REGISTER_SERIALIZER": "mitaina.serializers.RegisterSerializer",
 }
 
@@ -177,6 +178,27 @@ ACCOUNT_EMAIL_VERIFICATION = "none"
 ACCOUNT_USERNAME_REQUIRED = True
 ACCOUNT_AUTHENTICATION_METHOD = "username_email"
 
+# メール設定（開発用は console backend）
+EMAIL_BACKEND = env("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "no-reply@mitaina.local")
+
+# フロントエンドベースURL（env化）
+FRONTEND_BASE_URL = env("FRONTEND_BASE_URL", "http://localhost:5173")
+
+# パスワードリセット設定（フロントエンドURL - env化）
+PASSWORD_RESET_CONFIRM_URL = env(
+    "PASSWORD_RESET_CONFIRM_URL",
+    f"{FRONTEND_BASE_URL}/password-reset?uid={{uid}}&token={{token}}",
+)
+
+# dj-rest-auth設定（互換性のため両方）
+REST_AUTH = {
+    "PASSWORD_RESET_CONFIRM_URL": PASSWORD_RESET_CONFIRM_URL,
+}
+DJ_REST_AUTH = {
+    "PASSWORD_RESET_CONFIRM_URL": PASSWORD_RESET_CONFIRM_URL,
+}
+
 # CORS 設定
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
@@ -190,3 +212,11 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:3000",
     "http://localhost:8080",
 ]
+
+REST_AUTH = {
+    "PASSWORD_RESET_CONFIRM_URL": "http://localhost:5173/password-reset?uid={uid}&token={token}",
+}
+
+DJ_REST_AUTH = {
+    "PASSWORD_RESET_CONFIRM_URL": "http://localhost:5173/password-reset?uid={uid}&token={token}",
+}

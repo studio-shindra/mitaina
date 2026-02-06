@@ -26,20 +26,52 @@ class RegisterSerializer(serializers.ModelSerializer):
 class UserPublicSerializer(serializers.ModelSerializer):
     """ユーザーの公開情報シリアライザー"""
     public_id = serializers.CharField(source="username", read_only=True)
+    following_count = serializers.IntegerField(read_only=True, default=0)
+    followers_count = serializers.IntegerField(read_only=True, default=0)
+    is_followed = serializers.BooleanField(read_only=True, default=False)
 
     class Meta:
         model = User
-        fields = ("id", "public_id", "handle_name")
+        fields = ("id", "public_id", "handle_name", "following_count", "followers_count", "is_followed")
 
 
 class UserDetailSerializer(serializers.ModelSerializer):
     """ユーザーの詳細情報シリアライザー"""
     public_id = serializers.CharField(source="username")
+    following_count = serializers.IntegerField(read_only=True, default=0)
+    followers_count = serializers.IntegerField(read_only=True, default=0)
 
     class Meta:
         model = User
-        fields = ("id", "public_id", "handle_name", "email")
+        fields = ("id", "public_id", "handle_name", "email", "following_count", "followers_count")
         read_only_fields = ("id",)
+
+    def validate_public_id(self, value):
+        """public_id（username）のバリデーション"""
+        import re
+        
+        # 形式制約：英小文字/数字/_.、先頭英字、3〜20文字
+        if not re.match(r"^[a-z][a-z0-9_.]{2,19}$", value):
+            raise serializers.ValidationError(
+                "3〜20文字の英小文字で始まり、英小文字・数字・._を含む必要があります。"
+            )
+        
+        # 重複チェック（更新時は自分を除外）
+        if self.instance and self.instance.username == value:
+            # 自分自身の場合は OK
+            return value
+        
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("このユーザーID は既に使用されています。")
+        
+        return value
+
+    def update(self, instance, validated_data):
+        """username の更新を public_id から読み込む"""
+        if "username" in validated_data:
+            instance.username = validated_data["username"]
+            validated_data.pop("username")
+        return super().update(instance, validated_data)
 
 
 class PostSerializer(serializers.ModelSerializer):

@@ -197,9 +197,14 @@ const getGenreLabel = (genre) => {
     </div>
 
     <!-- 投稿一覧 -->
-    <div v-else class="row">
-      <div v-for="post in posts" :key="post.id" class="col-md-6">
-        <PostCard :post="post" />
+    <div v-else>
+      <div v-if="posts.length === 0" class="text-center text-muted py-4 mt-5">
+        うろ覚えの「うろ」は「おろそか」の「おろ」から変化した語で、<br>「うろうろ」の「うろ」と同じ意味です。たぶん。
+      </div>
+      <div v-else>
+        <div v-for="post in posts" :key="post.id">
+          <PostCard :post="post" />
+        </div>
       </div>
     </div>
 

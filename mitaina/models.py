@@ -35,6 +35,7 @@ class Post(models.Model):
     like_count = models.PositiveIntegerField(default=0)
     hatena_count = models.PositiveIntegerField(default=0)
     correct_count = models.PositiveIntegerField(default=0)
+    collect_count = models.PositiveIntegerField(default=0)
 
     created_at = models.DateTimeField(auto_now_add=True)
     deleted_at = models.DateTimeField(null=True, blank=True)  # 論理削除
@@ -52,6 +53,7 @@ class Reaction(models.Model):
         ("like", "👍みたい"),
         ("hatena", "❓いやちゃうやろw"),
         ("correct", "🚫これは正確な引用です"),
+        ("collect", "📎コレクト"),
     ]
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reactions")

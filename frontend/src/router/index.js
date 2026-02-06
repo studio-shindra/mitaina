@@ -6,11 +6,13 @@ import NewPost from "../views/NewPost.vue";
 import Me from "../views/Me.vue";
 import PostDetail from "../views/PostDetail.vue";
 import UserProfile from "../views/UserProfile.vue";
+import PasswordReset from "../views/PasswordReset.vue";
 
 const routes = [
   { path: "/", component: Home },
   { path: "/login", component: Login },
   { path: "/register", component: Register },
+  { path: "/password-reset", component: PasswordReset },
   { path: "/new", component: NewPost, meta: { requiresAuth: true } },
   { path: "/me", component: Me, meta: { requiresAuth: true } },
   { path: "/p/:id", component: PostDetail },

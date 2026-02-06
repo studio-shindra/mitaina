@@ -2,14 +2,21 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import api from "../lib/api";
+import PostCard from "../components/PostCard.vue";
+import ProfileEditModal from "../components/ProfileEditModal.vue";
+import PasswordChangeModal from "../components/PasswordChangeModal.vue";
 
 const router = useRouter();
 const user = ref(null);
-const reactions = ref({ like: [], hatena: [] });
-const notifications = ref([]);
+const posts = ref([]);
+const likedPosts = ref([]);
+const hatenaPosts = ref([]);
+const collectPosts = ref([]);
 const loading = ref(true);
 const error = ref("");
-const activeTab = ref("like");
+const activeTab = ref("posts");
+const showProfileEditModal = ref(false);
+const showPasswordChangeModal = ref(false);
 
 const loadUserData = async () => {
   try {
@@ -20,24 +27,46 @@ const loadUserData = async () => {
   }
 };
 
-const loadReactions = async () => {
+const loadUserPosts = async () => {
   try {
-    const likeResponse = await api.get("/me/reactions/?reaction_type=like");
-    const hatenaResponse = await api.get("/me/reactions/?reaction_type=hatena");
-    reactions.value.like = likeResponse.data.results || [];
-    reactions.value.hatena = hatenaResponse.data.results || [];
+    if (!user.value) return;
+
+    const username = user.value.public_id || user.value.username;
+    const response = await api.get(`/users/${username}/posts/`);
+    posts.value = response.data.results || [];
   } catch (err) {
-    error.value = "反応の読み込みに失敗しました";
+    error.value = "投稿の読み込みに失敗しました";
+    posts.value = [];
   }
 };
 
-const loadNotifications = async () => {
+const loadUserReactions = async (type) => {
   try {
-    const response = await api.get("/me/notifications/");
-    notifications.value = response.data.results || [];
+    const response = await api.get(`/me/reactions/?type=${type}`);
+    const data = response.data.results || response.data || [];
+    
+    if (type === "like") {
+      likedPosts.value = data;
+    } else if (type === "hatena") {
+      hatenaPosts.value = data;
+    } else if (type === "collect") {
+      collectPosts.value = data;
+    }
   } catch (err) {
-    // Notifications が実装されていない場合は無視
-    notifications.value = [];
+    console.error(`リアクション読み込みエラー (${type}):`, err);
+  }
+};
+
+const handleTabChange = async (tab) => {
+  activeTab.value = tab;
+  
+  // タブ切替時に毎回リアクションをロード（常に最新状態を取得）
+  if (tab === "like") {
+    await loadUserReactions("like");
+  } else if (tab === "hatena") {
+    await loadUserReactions("hatena");
+  } else if (tab === "collect") {
+    await loadUserReactions("collect");
   }
 };
 
@@ -46,146 +75,194 @@ const handleLogout = () => {
   router.push("/login");
 };
 
+const handleProfileEditOpen = () => {
+  showProfileEditModal.value = true;
+};
+
+const handleProfileEditClose = () => {
+  showProfileEditModal.value = false;
+};
+
+const handleProfileUpdated = (updatedUser) => {
+  user.value = updatedUser;
+  // 注: @ID が変わった場合、後で必要に応じて router.replace を呼ぶ
+};
+
+const handlePasswordChangeOpen = () => {
+  showPasswordChangeModal.value = true;
+};
+
+const handlePasswordChangeClose = () => {
+  showPasswordChangeModal.value = false;
+};
+
 onMounted(async () => {
   loading.value = true;
-  await Promise.all([loadUserData(), loadReactions(), loadNotifications()]);
+  await loadUserData();
+  await loadUserPosts();
   loading.value = false;
 });
 </script>
 
 <template>
-  <div class="me-container">
-    <div class="card mx-auto" style="max-width: 700px">
-      <div class="card-body">
-        <h3 class="card-title mb-4">マイページ</h3>
-
-        <div v-if="error" class="alert alert-danger">{{ error }}</div>
-
-        <div v-if="loading" class="text-center">
-          <div class="spinner-border" role="status">
-            <span class="visually-hidden">Loading...</span>
-          </div>
-        </div>
-
-        <template v-else>
+  <div class="user-profile-container">
+    <div class="user-profile mx-auto" style="max-width: 700px">
+      <div class="area">
           <!-- ユーザー情報 -->
-          <div v-if="user" class="card mb-4 bg-light">
-            <div class="card-body">
-              <h5 class="card-title">{{ user.username }}</h5>
-              <p class="card-text text-muted">@{{ user.handle_name }}</p>
-              <p class="card-text" v-if="user.email">{{ user.email }}</p>
-              <small class="text-muted">
-                参加日: {{ new Date(user.created_at).toLocaleDateString("ja-JP") }}
-              </small>
+          <div v-if="user" class="mb-3">
+            <div class="wrap mb-3">
+              <div class="fs-5 fw-bold">{{ user.handle_name }}</div>
+              <div class="text-muted">@{{ user.public_id || user.username }}</div>
+            </div>
+            <!-- ※プロフィール編集ボタンでできるようにしたい -->
+            <div class="change mb-3">
+              <button
+                class="btn btn-sm btn-primary rounded-5"
+                @click="handleProfileEditOpen"
+              >
+                プロフィール編集
+              </button>
+              <button
+                class="btn btn-sm btn-secondary rounded-5 ms-2"
+                @click="handlePasswordChangeOpen"
+              >
+                パスワード変更
+              </button>
+            </div>
+            <small class="text-muted">
+              {{ new Date(user.created_at).toLocaleDateString("ja-JP") }}ぐらいから使ってるみたいです
+            </small>
+            <div class="small d-flex align-items-center gap-1 mt-2">
+              <span class="fw-semibold">{{ user.following_count || 0 }}</span>
+              <span class="text-muted">フォロー</span>
+              <span class="ms-2 fw-semibold">{{ user.followers_count || 0 }}</span>
+              <span class="text-muted">フォロワー</span>
             </div>
           </div>
 
-          <!-- タブ切り替え -->
-          <ul class="nav nav-tabs mb-3" role="tablist">
-            <li class="nav-item">
-              <button
-                class="nav-link"
-                :class="{ active: activeTab === 'like' }"
-                @click="activeTab = 'like'"
-              >
-                いいね（{{ reactions.like.length }}）
-              </button>
-            </li>
-            <li class="nav-item">
-              <button
-                class="nav-link"
-                :class="{ active: activeTab === 'hatena' }"
-                @click="activeTab = 'hatena'"
-              >
-                いやちゃうやろw（{{ reactions.hatena.length }}）
-              </button>
-            </li>
-            <li class="nav-item">
-              <button
-                class="nav-link"
-                :class="{ active: activeTab === 'notifications' }"
-                @click="activeTab = 'notifications'"
-              >
-                通知
-              </button>
-            </li>
-          </ul>
+          <!-- タブナビゲーション -->
+          <div class="d-flex align-items-center justify-content-between" role="tablist">
+            <button
+              class="nav-link"
+              :class="{ active: activeTab === 'posts' }"
+              @click="activeTab = 'posts'"
+              role="tab"
+            >
+              投稿
+            </button>
+            <button
+              class="nav-link"
+              :class="{ active: activeTab === 'like' }"
+              @click="handleTabChange('like')"
+              role="tab"
+            >
+              いいね
+            </button>
+            <button
+              class="nav-link"
+              :class="{ active: activeTab === 'hatena' }"
+              @click="handleTabChange('hatena')"
+              role="tab"
+            >
+              はてな
+            </button>
+            <button
+              class="nav-link"
+              :class="{ active: activeTab === 'collect' }"
+              @click="handleTabChange('collect')"
+              role="tab"
+            >
+              コレクト
+            </button>
+          </div>
 
-          <!-- 反応のいいねタブ -->
+          <!-- 投稿タブ -->
+          <div v-if="activeTab === 'posts'">
+            <div v-if="posts.length === 0" class="text-center text-muted py-4">
+              投稿がありません
+            </div>
+            <div v-for="post in posts" :key="post.id">
+              <PostCard :post="post" />
+            </div>
+          </div>
+
+          <!-- いいねタブ -->
           <div v-if="activeTab === 'like'">
-            <div v-if="reactions.like.length === 0" class="text-center text-muted py-4">
-              いいねした投稿がありません
+            <div v-if="likedPosts.length === 0" class="text-center text-muted py-4">
+              いいねがありません
             </div>
-            <div v-for="reaction in reactions.like" :key="reaction.id" class="card mb-3">
-              <div class="card-body">
-                <p class="card-text">{{ reaction.post.text }}</p>
-                <small class="text-muted">
-                  投稿者: {{ reaction.post.author.username }}
-                </small>
-              </div>
+            <div v-for="post in likedPosts" :key="post.id">
+              <PostCard :post="post" />
             </div>
           </div>
 
-          <!-- 反応の「いやちゃうやろw」タブ -->
+          <!-- はてなタブ -->
           <div v-if="activeTab === 'hatena'">
-            <div v-if="reactions.hatena.length === 0" class="text-center text-muted py-4">
-              「いやちゃうやろw」した投稿がありません
+            <div v-if="hatenaPosts.length === 0" class="text-center text-muted py-4">
+              はてながありません
             </div>
-            <div v-for="reaction in reactions.hatena" :key="reaction.id" class="card mb-3">
-              <div class="card-body">
-                <p class="card-text">{{ reaction.post.text }}</p>
-                <small class="text-muted">
-                  投稿者: {{ reaction.post.author.username }}
-                </small>
-              </div>
+            <div v-for="post in hatenaPosts" :key="post.id">
+              <PostCard :post="post" />
             </div>
           </div>
 
-          <!-- 通知タブ -->
-          <div v-if="activeTab === 'notifications'">
-            <div v-if="notifications.length === 0" class="text-center text-muted py-4">
-              通知がありません
+          <!-- コレクトタブ -->
+          <div v-if="activeTab === 'collect'">
+            <div v-if="collectPosts.length === 0" class="text-center text-muted py-4">
+              コレクトがありません
             </div>
-            <div v-for="notification in notifications" :key="notification.id" class="card mb-3">
-              <div class="card-body">
-                <p class="card-text">{{ notification.message }}</p>
-                <small class="text-muted">
-                  {{ new Date(notification.created_at).toLocaleString("ja-JP") }}
-                </small>
-              </div>
+            <div v-for="post in collectPosts" :key="post.id">
+              <PostCard :post="post" />
             </div>
           </div>
 
           <!-- ログアウトボタン -->
-          <button
+          <!-- <button
             @click="handleLogout"
             class="btn btn-outline-danger w-100 mt-4"
           >
             ログアウト
-          </button>
-        </template>
+          </button> -->
       </div>
     </div>
+
+    <!-- プロフィール編集モーダル -->
+    <ProfileEditModal
+      :show="showProfileEditModal"
+      :user="user"
+      @close="handleProfileEditClose"
+      @updated="handleProfileUpdated"
+    />
+
+    <!-- パスワード変更モーダル -->
+    <PasswordChangeModal
+      :show="showPasswordChangeModal"
+      @close="handlePasswordChangeClose"
+    />
   </div>
 </template>
 
 <style scoped>
-.me-container {
-  max-width: 700px;
-  margin: 0 auto;
+.card-body {
+  cursor: default;
 }
 
 .nav-link {
   color: #6c757d;
   border: none;
-  border-bottom: 2px solid transparent;
   cursor: pointer;
   padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+}
+
+.nav-link:hover {
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
 }
 
 .nav-link.active {
-  color: #495057;
-  border-bottom-color: #007bff;
+  color: #000;
+  border-bottom: 2px solid #222222;
   font-weight: 600;
 }
 </style>

@@ -1,5 +1,6 @@
 """ビジネスロジックサービス"""
 from django.db import transaction
+from django.db.models import F
 from .models import Reaction, Notification, Follow, Post
 
 
@@ -10,12 +11,12 @@ def toggle_reaction(user, post, reaction_type):
     Args:
         user: リアクションを行うユーザー
         post: リアクション対象の投稿
-        reaction_type: リアクションタイプ ('like', 'hatena', 'correct')
+        reaction_type: リアクションタイプ ('like', 'hatena', 'correct', 'collect')
     
     Returns:
         dict: {'created': bool, 'reaction': Reaction or None}
     """
-    if reaction_type not in ["like", "hatena", "correct"]:
+    if reaction_type not in ["like", "hatena", "correct", "collect"]:
         raise ValueError(f"Invalid reaction type: {reaction_type}")
     
     try:
@@ -23,13 +24,15 @@ def toggle_reaction(user, post, reaction_type):
         # 既に存在する場合は削除
         reaction.delete()
         
-        # カウンタをデクリメント
+        # カウンタをデクリメント（F() で原子性確保）
         if reaction_type == "like":
             post.like_count = max(0, post.like_count - 1)
         elif reaction_type == "hatena":
             post.hatena_count = max(0, post.hatena_count - 1)
         elif reaction_type == "correct":
             post.correct_count = max(0, post.correct_count - 1)
+        elif reaction_type == "collect":
+            post.collect_count = max(0, post.collect_count - 1)
         post.save(update_fields=[f"{reaction_type}_count"])
         
         return {"created": False, "reaction": None}
@@ -42,14 +45,11 @@ def toggle_reaction(user, post, reaction_type):
             reaction_type=reaction_type
         )
         
-        # カウンタをインクリメント
-        if reaction_type == "like":
-            post.like_count += 1
-        elif reaction_type == "hatena":
-            post.hatena_count += 1
-        elif reaction_type == "correct":
-            post.correct_count += 1
-        post.save(update_fields=[f"{reaction_type}_count"])
+        # カウンタをインクリメント（F() で原子性確保）
+        count_field = f"{reaction_type}_count"
+        post = Post.objects.get(pk=post.pk)  # リロード
+        post.__dict__[count_field] = getattr(post, count_field) + 1
+        post.save(update_fields=[count_field])
         
         # like のみ通知を作成
         if reaction_type == "like" and user != post.author:

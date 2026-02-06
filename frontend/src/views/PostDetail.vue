@@ -28,14 +28,15 @@ const loadPost = async () => {
 const loadUserReactions = async () => {
   try {
     const responses = await Promise.all([
-      api.get(`/me/reactions/?reaction_type=like`),
-      api.get(`/me/reactions/?reaction_type=hatena`),
-      api.get(`/me/reactions/?reaction_type=correct`),
+      api.get(`/me/reactions/?type=like`),
+      api.get(`/me/reactions/?type=hatena`),
+      api.get(`/me/reactions/?type=correct`),
+      api.get(`/me/reactions/?type=collect`),
     ]);
 
     const postId = route.params.id;
     responses.forEach((res, idx) => {
-      const reactionTypes = ["like", "hatena", "correct"];
+      const reactionTypes = ["like", "hatena", "correct", "collect"];
       const type = reactionTypes[idx];
       userReactions.value[type] = res.data.results?.some(
         (r) => r.post.id === postId
@@ -225,6 +226,17 @@ onMounted(async () => {
                 "
               >
                 <strong>なるほど</strong> ({{ post.correct_count || 0 }})
+              </button>
+              <button
+                @click="toggleReaction('collect')"
+                class="btn"
+                :class="
+                  userReactions.collect
+                    ? 'btn-secondary'
+                    : 'btn-outline-secondary'
+                "
+              >
+                <strong>コレクト</strong> ({{ post.collect_count || 0 }})
               </button>
             </div>
 

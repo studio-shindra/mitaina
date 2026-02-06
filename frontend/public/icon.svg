@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg id="_レイヤー_2" data-name="レイヤー 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 750 800">
+<svg id="_レイヤー_2" data-name="レイヤー 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 470.46 465.57">
   <g id="_レイヤー_1-2" data-name="レイヤー 1">
     <g>
-      <rect width="750" height="200"/>
-      <rect y="300" width="750" height="200"/>
-      <rect y="600" width="750" height="200"/>
+      <rect x="50.69" y="26.86" width="421.87" height="78.5" rx="39.25" ry="39.25" transform="translate(13.56 -40.11) rotate(9)"/>
+      <rect x="24.29" y="193.54" width="421.87" height="78.5" rx="39.25" ry="39.25" transform="translate(39.31 -33.93) rotate(9)"/>
+      <rect x="-2.11" y="360.21" width="421.87" height="78.5" rx="39.25" ry="39.25" transform="translate(65.06 -27.75) rotate(9)"/>
     </g>
   </g>
 </svg>
