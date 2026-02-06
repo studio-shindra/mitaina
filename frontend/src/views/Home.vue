@@ -6,6 +6,7 @@ import PostCard from "../components/PostCard.vue";
 import NewPostModal from "../components/NewPostModal.vue";
 import { IconCirclePlusFilled, IconSearch, IconUser, IconHome, IconSortDescending } from '@tabler/icons-vue';
 
+const router = useRouter();
 const posts = ref([]);
 const loading = ref(false);
 const error = ref("");
