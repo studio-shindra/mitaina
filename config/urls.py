@@ -1,7 +1,7 @@
 # config/urls.py
 from django.contrib import admin
 from django.urls import path, include
-from mitaina.views import password_reset_redirect
+from mitaina.password_reset_views import password_reset_redirect
 
 urlpatterns = [
     path("admin/", admin.site.urls),

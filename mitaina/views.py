@@ -226,13 +226,19 @@ class PostViewSet(viewsets.ModelViewSet):
         
         try:
             result = toggle_reaction(request.user, post, reaction_type)
-            return Response(
-                {
-                    "detail": f"{reaction_type}リアクションを追加しました" if result["created"] else f"{reaction_type}リアクションを削除しました",
-                    "is_reacted": result["created"],
-                },
-                status=status.HTTP_200_OK,
-            )
+            
+            # correct の場合、最新の correct_count を含める
+            response_data = {
+                "detail": f"{reaction_type}リアクションを追加しました" if result["created"] else f"{reaction_type}リアクションを削除しました",
+                "is_reacted": result["created"],
+            }
+            
+            if reaction_type == "correct":
+                # 最新の post データを取得
+                post.refresh_from_db()
+                response_data["correct_count"] = post.correct_count
+            
+            return Response(response_data, status=status.HTTP_200_OK)
         except ValueError as e:
             return Response(
                 {"detail": str(e)},
@@ -266,12 +272,12 @@ class PostViewSet(viewsets.ModelViewSet):
             
             if not created:
                 return Response(
-                    {"detail": "既にこの投稿を通報しています。"},
+                    {"detail": "既にこの投稿を報告してます。"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             
             return Response(
-                {"detail": "通報しました。"},
+                {"detail": "正しいです。"},
                 status=status.HTTP_201_CREATED,
             )
         except Exception as e:

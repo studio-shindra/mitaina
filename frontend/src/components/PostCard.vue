@@ -3,22 +3,29 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { IconHeart, IconHelpOctagon, IconCircleX, IconPaperclip, IconHeartFilled, IconHelpOctagonFilled, IconCircleXFilled } from '@tabler/icons-vue';
 import api from "../lib/api";
+import CorrectConfirmModal from "./CorrectConfirmModal.vue";
 
 const router = useRouter();
 const props = defineProps({
   post: { type: Object, required: true },
 });
 
+const emit = defineEmits(['reaction-changed']);
+
 const isLiked = ref(false);
 const isHatena = ref(false);
 const isCorrect = ref(false);
-const isCollect = ref(false);
+
+// correct モーダル状態
+const showCorrectModal = ref(false);
 
 // ローカルカウント（props を直接編集しない）
 const likeCount = ref(props.post.like_count || 0);
 const hatenaCount = ref(props.post.hatena_count || 0);
 const correctCount = ref(props.post.correct_count || 0);
-const collectCount = ref(props.post.collect_count || 0);
+
+// opacity計算（全ユーザー合算の罪カウント）
+const fadeOpacity = computed(() => Math.max(0.1, 1 - (correctCount.value * 0.1)));
 
 const formatDate = (dateStr) => {
   if (!dateStr) return "";
@@ -42,7 +49,6 @@ const getPair = (type) => {
     case "like": return { flag: isLiked, count: likeCount };
     case "hatena": return { flag: isHatena, count: hatenaCount };
     case "correct": return { flag: isCorrect, count: correctCount };
-    case "collect": return { flag: isCollect, count: collectCount };
     default: return null;
   }
 };
@@ -66,12 +72,41 @@ const toggleReaction = async (type) => {
   count.value = was ? Math.max(0, old - 1) : old + 1;
 
   try {
-    await api.post(`/posts/${props.post.id}/react/`, { reaction_type: type });
+    const response = await api.post(`/posts/${props.post.id}/react/`, { reaction_type: type });
+    
+    // correct の場合、サーバーから correct_count を取得して同期
+    if (type === "correct" && response.data.correct_count !== undefined) {
+      correctCount.value = response.data.correct_count;
+    }
+    
+    // リアクション成功時に親に通知
+    emit('reaction-changed', { type, postId: props.post.id });
   } catch (e) {
     // rollback
     flag.value = was;
     count.value = old;
   }
+};
+
+// correct ボタン押下時：モーダルを開く
+const openCorrectModal = () => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    router.push("/login");
+    return;
+  }
+  showCorrectModal.value = true;
+};
+
+// モーダル confirm 時：実際のトグルを実行
+const handleCorrectConfirm = async () => {
+  showCorrectModal.value = false;
+  await toggleReaction('correct');
+};
+
+// モーダル close 時：何もしない
+const handleCorrectClose = () => {
+  showCorrectModal.value = false;
 };
 </script>
 
@@ -88,21 +123,21 @@ const toggleReaction = async (type) => {
         </div>
       </div>
 
-      <div class="main-text-area p-3">
+      <div class="main-text-area p-3" :style="{ opacity: fadeOpacity }">
         <p class="fs-5 noto-mincho" style="white-space: pre-wrap;">{{ post.text }}</p>
       </div>
-        <div class="d-flex justify-content-between px-3">
-            <div class="d-flex d-flex align-items-center justify-content-end">
-                <div class="text-end text-secondary small fst-italic noto-mincho c-name d-flex align-items-center gap-1">
-                    {{ post.character_name || 'あのキャラ' }}
-                </div>
-            </div>
-            <div class="d-flex align-items-center">
-                <div class="text-secondary small">{{ post.work_title || 'なんだっけな' }}</div>
-                <div>/</div>
-                <div class="text-secondary small">{{ post.performer_name || 'あの人' }}</div>
-            </div>
+      <div class="d-flex justify-content-between px-3" :style="{ opacity: fadeOpacity }">
+        <div class="d-flex align-items-center justify-content-end">
+          <div class="text-end text-secondary small fst-italic noto-mincho c-name d-flex align-items-center gap-1">
+            {{ post.character_name || 'あのキャラ' }}
+          </div>
         </div>
+        <div class="d-flex align-items-center">
+          <div class="text-secondary small">{{ post.work_title || 'なんだっけな' }}</div>
+          <div>/</div>
+          <div class="text-secondary small">{{ post.performer_name || 'あの人' }}</div>
+        </div>
+      </div>
 
       <!-- <div class="d-flex align-items-center justify-content-between p-3">
           <div class="d-flex align-items-center">
@@ -121,23 +156,17 @@ const toggleReaction = async (type) => {
                 </button>
                 <span>{{ likeCount }}</span>
             </div>
-            <div class="d-flex align-items-center gap-1">
+            <!-- <div class="d-flex align-items-center gap-1">
                 <button class="btn btn-sm p-0 border-0 bg-transparent" @click="toggleReaction('hatena')">
                   <component :is="isHatena ? IconHelpOctagonFilled : IconHelpOctagon" />
                 </button>
                 <span>{{ hatenaCount }}</span>
-            </div>
+            </div> -->
             <div class="d-flex align-items-center gap-1">
-                <button class="btn btn-sm p-0 border-0 bg-transparent" @click="toggleReaction('correct')">
+                <button class="btn btn-sm p-0 border-0 bg-transparent" @click="openCorrectModal">
                   <component :is="isCorrect ? IconCircleXFilled : IconCircleX" />
                 </button>
                 <span>{{ correctCount }}</span>
-            </div>
-            <div class="d-flex align-items-center gap-1">
-                <button class="btn btn-sm p-0 border-0 bg-transparent" @click="toggleReaction('collect')">
-                  <component :is="isCollect ? IconPaperclip : IconPaperclip" :stroke-width="isCollect ? 2.5 : 1.5" />
-                </button>
-                <span>{{ collectCount }}</span>
             </div>
             <div>
                 <span class="badge bg-light text-dark border">{{ genreLabel }}</span>
@@ -153,5 +182,11 @@ const toggleReaction = async (type) => {
       </router-link> -->
     </div>
 
+    <!-- correct 確認モーダル -->
+    <CorrectConfirmModal
+      :show="showCorrectModal"
+      @confirm="handleCorrectConfirm"
+      @close="handleCorrectClose"
+    />
   </div>
 </template>

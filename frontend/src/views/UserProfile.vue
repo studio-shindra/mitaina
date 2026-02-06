@@ -10,7 +10,7 @@ const user = ref(null);
 const posts = ref([]);
 const likedPosts = ref([]);
 const hatenaPosts = ref([]);
-const collectPosts = ref([]);
+const correctPosts = ref([]);
 const loading = ref(true);
 const error = ref("");
 const isFollowing = ref(false);
@@ -48,8 +48,8 @@ const loadUserReactions = async (type) => {
       likedPosts.value = data;
     } else if (type === "hatena") {
       hatenaPosts.value = data;
-    } else if (type === "collect") {
-      collectPosts.value = data;
+    } else if (type === "correct") {
+      correctPosts.value = data;
     }
   } catch (err) {
     console.error(`リアクション読み込みエラー (${type}):`, err);
@@ -69,14 +69,15 @@ const toggleFollow = async () => {
 const handleTabChange = async (tab) => {
   activeTab.value = tab;
   
-  // タブ切替時にデータをロード（まだロードしていない場合）
-  if (tab === "like" && likedPosts.value.length === 0) {
-    await loadUserReactions("like");
-  } else if (tab === "hatena" && hatenaPosts.value.length === 0) {
-    await loadUserReactions("hatena");
-  } else if (tab === "collect" && collectPosts.value.length === 0) {
-    await loadUserReactions("collect");
-  }
+  // タブ切替のたびに必ずAPI再取得
+  if (tab === "like") await loadUserReactions("like");
+  if (tab === "hatena") await loadUserReactions("hatena");
+  if (tab === "correct") await loadUserReactions("correct");
+};
+
+const handleReactionChanged = async ({ type }) => {
+  // 今見てるタブが対象なら再取得
+  if (activeTab.value === type) await loadUserReactions(type);
 };
 
 onMounted(async () => {
@@ -134,21 +135,21 @@ onMounted(async () => {
             >
               いいね
             </button>
-            <button
+            <!-- <button
               class="nav-link"
               :class="{ active: activeTab === 'hatena' }"
               @click="handleTabChange('hatena')"
               role="tab"
             >
               はてな
-            </button>
+            </button> -->
             <button
               class="nav-link"
-              :class="{ active: activeTab === 'collect' }"
-              @click="handleTabChange('collect')"
+              :class="{ active: activeTab === 'correct' }"
+              @click="handleTabChange('correct')"
               role="tab"
             >
-              コレクト
+              正確な引用
             </button>
           </div>
 
@@ -158,7 +159,7 @@ onMounted(async () => {
               投稿がありません
             </div>
             <div v-for="post in posts" :key="post.id">
-              <PostCard :post="post" />
+              <PostCard :post="post" @reaction-changed="handleReactionChanged" />
             </div>
           </div>
 
@@ -168,27 +169,17 @@ onMounted(async () => {
               いいねがありません
             </div>
             <div v-for="post in likedPosts" :key="post.id">
-              <PostCard :post="post" />
-            </div>
-          </div>
-
-          <!-- はてなタブ -->
-          <div v-if="activeTab === 'hatena'">
-            <div v-if="hatenaPosts.length === 0" class="text-center text-muted py-4">
-              はてながありません
-            </div>
-            <div v-for="post in hatenaPosts" :key="post.id">
-              <PostCard :post="post" />
+              <PostCard :post="post" @reaction-changed="handleReactionChanged" />
             </div>
           </div>
 
           <!-- コレクトタブ -->
-          <div v-if="activeTab === 'collect'">
-            <div v-if="collectPosts.length === 0" class="text-center text-muted py-4">
-              コレクトがありません
+          <div v-if="activeTab === 'correct'">
+            <div v-if="correctPosts.length === 0" class="text-center text-muted py-4">
+              正確な引用がありません
             </div>
-            <div v-for="post in collectPosts" :key="post.id">
-              <PostCard :post="post" />
+            <div v-for="post in correctPosts" :key="post.id">
+              <PostCard :post="post" @reaction-changed="handleReactionChanged" />
             </div>
           </div>
       </div>

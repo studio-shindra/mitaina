@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
+import { IconDots } from '@tabler/icons-vue';
 import api from "../lib/api";
 import PostCard from "../components/PostCard.vue";
 import ProfileEditModal from "../components/ProfileEditModal.vue";
@@ -11,12 +12,13 @@ const user = ref(null);
 const posts = ref([]);
 const likedPosts = ref([]);
 const hatenaPosts = ref([]);
-const collectPosts = ref([]);
+const correctPosts = ref([]);
 const loading = ref(true);
 const error = ref("");
 const activeTab = ref("posts");
 const showProfileEditModal = ref(false);
 const showPasswordChangeModal = ref(false);
+const showMenu = ref(false);
 
 const loadUserData = async () => {
   try {
@@ -49,8 +51,8 @@ const loadUserReactions = async (type) => {
       likedPosts.value = data;
     } else if (type === "hatena") {
       hatenaPosts.value = data;
-    } else if (type === "collect") {
-      collectPosts.value = data;
+    } else if (type === "correct") {
+      correctPosts.value = data;
     }
   } catch (err) {
     console.error(`リアクション読み込みエラー (${type}):`, err);
@@ -60,14 +62,10 @@ const loadUserReactions = async (type) => {
 const handleTabChange = async (tab) => {
   activeTab.value = tab;
   
-  // タブ切替時に毎回リアクションをロード（常に最新状態を取得）
-  if (tab === "like") {
-    await loadUserReactions("like");
-  } else if (tab === "hatena") {
-    await loadUserReactions("hatena");
-  } else if (tab === "collect") {
-    await loadUserReactions("collect");
-  }
+  // タブ切替のたびに必ずAPI再取得
+  if (tab === "like") await loadUserReactions("like");
+  if (tab === "hatena") await loadUserReactions("hatena");
+  if (tab === "correct") await loadUserReactions("correct");
 };
 
 const handleLogout = () => {
@@ -96,6 +94,10 @@ const handlePasswordChangeClose = () => {
   showPasswordChangeModal.value = false;
 };
 
+const toggleMenu = () => {
+  showMenu.value = !showMenu.value;
+};
+
 onMounted(async () => {
   loading.value = true;
   await loadUserData();
@@ -115,25 +117,44 @@ onMounted(async () => {
               <div class="text-muted">@{{ user.public_id || user.username }}</div>
             </div>
             <!-- ※プロフィール編集ボタンでできるようにしたい -->
-            <div class="change mb-3">
+            <div class="change mb-3 d-flex gap-2 align-items-center justify-content-between">
               <button
                 class="btn btn-sm btn-primary rounded-5 px-3"
                 @click="handleProfileEditOpen"
               >
                 プロフィール編集
               </button>
-              <button
-                class="btn btn-sm btn-secondary rounded-5 ms-2 px-3"
-                @click="handlePasswordChangeOpen"
-              >
-                パスワード変更
-              </button>
-              <button
-                @click="handleLogout"
-                class="btn btn-sm btn-outline-danger rounded-5 ms-2 px-3"
-              >
-                ログアウト
-              </button>
+              
+              <!-- ドロップダウンメニュー -->
+              <div class="dropdown" style="position: relative;">
+                <button
+                  class="btn btn-sm p-2"
+                  @click="toggleMenu"
+                  style="width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;"
+                >
+                  <IconDots :size="20" />
+                </button>
+                
+                <div
+                  v-if="showMenu"
+                  class="dropdown-menu show"
+                  style="position: absolute; right: 0; top: 100%; margin-top: 4px;"
+                  @click="showMenu = false"
+                >
+                  <button
+                    class="dropdown-item"
+                    @click="handlePasswordChangeOpen"
+                  >
+                    パスワード変更
+                  </button>
+                  <button
+                    class="dropdown-item text-danger"
+                    @click="handleLogout"
+                  >
+                    ログアウト
+                  </button>
+                </div>
+              </div>
             </div>
             <small class="text-muted">
               {{ new Date(user.created_at).toLocaleDateString("ja-JP") }}ぐらいから使ってるみたいです
@@ -166,19 +187,11 @@ onMounted(async () => {
             </button>
             <button
               class="nav-link"
-              :class="{ active: activeTab === 'hatena' }"
-              @click="handleTabChange('hatena')"
+              :class="{ active: activeTab === 'correct' }"
+              @click="handleTabChange('correct')"
               role="tab"
             >
-              はてな
-            </button>
-            <button
-              class="nav-link"
-              :class="{ active: activeTab === 'collect' }"
-              @click="handleTabChange('collect')"
-              role="tab"
-            >
-              コレクト
+              正確な引用
             </button>
           </div>
 
@@ -213,11 +226,11 @@ onMounted(async () => {
           </div>
 
           <!-- コレクトタブ -->
-          <div v-if="activeTab === 'collect'">
-            <div v-if="collectPosts.length === 0" class="text-center text-muted py-4">
-              コレクトがありません
+          <div v-if="activeTab === 'correct'">
+            <div v-if="correctPosts.length === 0" class="text-center text-muted py-4">
+              正確な引用がありません
             </div>
-            <div v-for="post in collectPosts" :key="post.id">
+            <div v-for="post in correctPosts" :key="post.id">
               <PostCard :post="post" />
             </div>
           </div>
