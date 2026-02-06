@@ -220,3 +220,7 @@ REST_AUTH = {
 DJ_REST_AUTH = {
     "PASSWORD_RESET_CONFIRM_URL": "http://localhost:5173/password-reset?uid={uid}&token={token}",
 }
+
+
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
