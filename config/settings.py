@@ -84,15 +84,14 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+import dj_database_url
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": env("DB_NAME", "mitaina"),
-        "USER": env("DB_USER", "mitaina"),
-        "PASSWORD": env("DB_PASSWORD", "mitaina_password"),
-        "HOST": env("DB_HOST", "127.0.0.1"),
-        "PORT": env("DB_PORT", "5432"),
-    }
+    "default": dj_database_url.config(
+        default=f"postgres://{env('DB_USER','mitaina')}:{env('DB_PASSWORD','mitaina_password')}@{env('DB_HOST','127.0.0.1')}:{env('DB_PORT','5432')}/{env('DB_NAME','mitaina')}",
+        conn_max_age=600,
+        ssl_require=not DEBUG,
+    )
 }
 
 REST_FRAMEWORK = {
