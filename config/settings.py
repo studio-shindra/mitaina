@@ -200,18 +200,20 @@ DJ_REST_AUTH = {
 }
 
 # CORS 設定
-CORS_ALLOWED_ORIGINS = [
+# 環境変数でカンマ区切りで追加可能（例: CORS_EXTRA_ORIGINS=https://mitaina.netlify.app,https://example.com）
+_cors_base_origins = [
     "http://localhost:5173",
     "http://localhost:3000",
     "http://localhost:8080",
 ]
+_cors_extra = env("CORS_EXTRA_ORIGINS", "")
+if _cors_extra:
+    _cors_base_origins.extend([origin.strip() for origin in _cors_extra.split(",") if origin.strip()])
+
+CORS_ALLOWED_ORIGINS = _cors_base_origins
 
 # CSRF 信頼オリジン
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "http://localhost:8080",
-]
+CSRF_TRUSTED_ORIGINS = _cors_base_origins.copy()
 
 REST_AUTH = {"PASSWORD_RESET_CONFIRM_URL": PASSWORD_RESET_CONFIRM_URL}
 DJ_REST_AUTH = {"PASSWORD_RESET_CONFIRM_URL": PASSWORD_RESET_CONFIRM_URL}
